@@ -48,7 +48,7 @@ let main argv =
     printfn ""
     printfn "%A" tokens
     printfn ""
-    printfn "%A" program
+    printfn "%A" (compiler.parser.convertToASM tokens [])
     printfn ""
     //
     0

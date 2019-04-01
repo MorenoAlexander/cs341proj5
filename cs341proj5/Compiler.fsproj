@@ -6,9 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="main.c" />
     <Compile Include="lexer.fs" />
     <Compile Include="parser.fs" />
     <Compile Include="main.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
 </Project>
