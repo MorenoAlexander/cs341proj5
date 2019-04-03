@@ -84,15 +84,54 @@ module parser =
     |> matchToken lexer.Tokens.ID
     |> matchToken lexer.Tokens.Semicolon
 
-  let rec exprvalue (tokens,program)=
+  let rec exprvalue2 (tokens,program)=
     let (h,_) = List.head tokens
     match h with
-    | lexer.Tokens.Str_Literal -> exprvalue (matchToken lexer.Tokens.Str_Literal (tokens,program) )
-    | lexer.Tokens.ID -> exprvalue (matchToken lexer.Tokens.Str_Literal (tokens,program) )
-    | lexer.Tokens.Int_Literal -> exprvalue (matchToken lexer.Tokens.Str_Literal (tokens,program) )
-    | lexer.Tokens.Bool_Literal -> exprvalue (matchToken lexer.Tokens.Str_Literal (tokens,program) ) 
+    | lexer.Tokens.Str_Literal -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) )
+    | lexer.Tokens.ID -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) )
+    | lexer.Tokens.Int_Literal -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) )
+    | lexer.Tokens.Bool_Literal -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) ) 
     | h -> (tokens,program)
-      
+
+
+
+  let exprvalue (tokens,program)=
+    let (h,_) = List.head tokens
+    match h with
+    | lexer.Tokens.Str_Literal -> matchToken lexer.Tokens.Str_Literal (tokens,program)
+    | lexer.Tokens.ID -> matchToken lexer.Tokens.ID (tokens,program)
+    | lexer.Tokens.Int_Literal -> matchToken lexer.Tokens.Int_Literal (tokens,program)
+    | lexer.Tokens.Bool_Literal -> matchToken lexer.Tokens.Bool_Literal (tokens,program)
+    | h -> (tokens,program)
+
+  let isExprOP hd =
+    match hd with
+    | lexer.Tokens.Divide -> true // /
+    | lexer.Tokens.Minus -> true  // -
+    | lexer.Tokens.Plus -> true   // +
+    | lexer.Tokens.Times -> true  // *
+    | lexer.Tokens.Power -> true  // ^
+    | hd -> false
+
+  let exprOP  (tokens,program) =
+    let (h,_) = List.head tokens
+    match h with
+    | lexer.Tokens.Divide -> matchToken lexer.Tokens.Divide (tokens,program)
+    | lexer.Tokens.Minus -> matchToken lexer.Tokens.Minus (tokens, program)
+    | lexer.Tokens.Plus -> matchToken lexer.Tokens.Plus (tokens, program)
+    | lexer.Tokens.Times -> matchToken lexer.Tokens.Times (tokens,program)
+    | lexer.Tokens.Power -> matchToken lexer.Tokens.Power (tokens, program)
+
+
+  let expr (tokens, program) =
+    let (hd,_) = (List.tail tokens).Head
+    if (isExprOP hd) = true then
+      (tokens,program)
+      |> exprvalue
+      |> exprOP
+      |> exprvalue
+    else
+      exprvalue (tokens,program)
 
    
   let parseCout (tokens, program) = 
@@ -113,7 +152,7 @@ module parser =
   let rec stmts (tokens,program) =
     let h = List.head tokens
     match h with 
-      |(tok,_) when tok = lexer.Tokens.CloseBrace -> (tokens,program)
+      | (tok,_) when tok = lexer.Tokens.CloseBrace -> (tokens,program)
       | (tok,_) when tok = lexer.Tokens.Int -> stmts (parseInt (tokens,program))
       | (tok,_) when tok = lexer.Tokens.Cin -> stmts (parseInput (tokens, program))
       | (tok,_) when tok = lexer.Tokens.Cout -> stmts (parseCout (tokens, program))
