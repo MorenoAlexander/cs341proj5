@@ -59,16 +59,24 @@ module parser =
       failwith ("expecting " + (string expected_token) + ", but found " + (string token))
 
   //ASM conversion-------------------------------------------------------------------------------------------------------
-  let rec ASM tokens program =
-    match tokens with
+  
+
+  
+  
+  let rec ASM (tokens,program) =
+    match tokens,program with
     |  [] -> program
-    |  (lexer.Tokens.Int,_)::(lexer.Tokens.ID,str)::(lexer.Tokens.Semicolon,_)::rest -> ASM rest (["$DECL";str]::program)
+    |  (lexer.Tokens.Int,_)::(lexer.Tokens.ID,str)::(lexer.Tokens.Semicolon,_)::rest -> ASM (rest,(["$DECL";str]::program)) //Simple rule
     |  (_,_)::rest -> ASM rest ([]::program)
     
   let convertToASM tokens program =
-    List.rev (ASM tokens program)
+    List.rev (ASM (tokens,program))
   //End ASM conversion----------------------------------------------------------------------------------------------------
 
+
+  let empty (tokens, program) =
+    (tokens, program)
+    |> matchToken lexer.Tokens.Semicolon
 
 
   let parseInt (tokens,program) =
@@ -84,14 +92,7 @@ module parser =
     |> matchToken lexer.Tokens.ID
     |> matchToken lexer.Tokens.Semicolon
 
-  let rec exprvalue2 (tokens,program)=
-    let (h,_) = List.head tokens
-    match h with
-    | lexer.Tokens.Str_Literal -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) )
-    | lexer.Tokens.ID -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) )
-    | lexer.Tokens.Int_Literal -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) )
-    | lexer.Tokens.Bool_Literal -> exprvalue2 (matchToken lexer.Tokens.Str_Literal (tokens,program) ) 
-    | h -> (tokens,program)
+
 
 
 
@@ -121,8 +122,14 @@ module parser =
     | lexer.Tokens.Plus -> matchToken lexer.Tokens.Plus (tokens, program)
     | lexer.Tokens.Times -> matchToken lexer.Tokens.Times (tokens,program)
     | lexer.Tokens.Power -> matchToken lexer.Tokens.Power (tokens, program)
+    | lexer.Tokens.LT -> matchToken lexer.Tokens.LT (tokens, program)
+    | lexer.Tokens.GT -> matchToken lexer.Tokens.GT (tokens, program)
+    | lexer.Tokens.LTE -> matchToken lexer.Tokens.LTE (tokens, program)
+    | lexer.Tokens.GTE -> matchToken lexer.Tokens.GTE (tokens, program)
+    | lexer.Tokens.EQ -> matchToken lexer.Tokens.EQ (tokens, program)
+    | lexer.Tokens.NE -> matchToken lexer.Tokens.NE (tokens, program)
 
-
+  //expressions
   let expr (tokens, program) =
     let (hd,_) = (List.tail tokens).Head
     if (isExprOP hd) = true then
@@ -133,7 +140,7 @@ module parser =
     else
       exprvalue (tokens,program)
 
-   
+  //cout
   let parseCout (tokens, program) = 
     (tokens,program)
     |> matchToken lexer.Tokens.Cout
@@ -141,38 +148,74 @@ module parser =
     |> expr
     |> matchToken lexer.Tokens.Semicolon
     
-
   let parseID (tokens, program) =
     (tokens,program)
     |> matchToken lexer.Tokens.ID
     |> matchToken lexer.Tokens.Assign
-    |> exprvalue
+    |> expr
     |> matchToken lexer.Tokens.Semicolon
 
 
+  let elsepart (tokens,program) = 
+    let rec thenstmts (tokens,program) =
+      let h = List.head tokens
+      match h with 
+      | (tok,_) when tok = lexer.Tokens.CloseBrace -> (tokens,program)
+      | (tok,_) when tok = lexer.Tokens.Int -> thenstmts (parseInt (tokens,program))
+      | (tok,_) when tok = lexer.Tokens.Cin -> thenstmts (parseInput (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.Cout -> thenstmts (parseCout (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.ID -> thenstmts (parseID (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.Semicolon -> thenstmts (empty (tokens, program))
+    let (h,_) = List.head tokens
 
-  let parseElsepart (tokens, program) =
-    (tokens, program)
+    if h = lexer.Tokens.Else then
+        (tokens,program)
+        |> matchToken lexer.Tokens.Else
+        |> thenstmts
+    else
+        (tokens, program)
 
 
-  let parseIf (tokens, program) = 
+  let ifstmt (tokens,program) =
+    let rec thenstmts (tokens,program) =
+      let h = List.head tokens
+      match h with 
+      | (tok,_) when tok = lexer.Tokens.CloseBrace -> (tokens,program)
+      | (tok,_) when tok = lexer.Tokens.Int -> thenstmts (parseInt (tokens,program))
+      | (tok,_) when tok = lexer.Tokens.Cin -> thenstmts (parseInput (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.Cout -> thenstmts (parseCout (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.ID -> thenstmts (parseID (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.If -> thenstmts (ifstmt (tokens, program))
+      | (tok,_) when tok = lexer.Tokens.Semicolon -> thenstmts (empty (tokens, program))
     (tokens,program)
     |> matchToken lexer.Tokens.If
     |> matchToken lexer.Tokens.OpenParen
     |> expr
     |> matchToken lexer.Tokens.CloseParen
-    |> parseElsepart
-  let rec stmts (tokens,program) =
+    |> matchToken lexer.Tokens.OpenBrace
+    |> thenstmts
+    |> elsepart
+
+
+
+
+
+  let rec morestmts (tokens,program) =
     let h = List.head tokens
     match h with 
-      | (tok,_) when tok = lexer.Tokens.CloseBrace -> (tokens,program)
-      | (tok,_) when tok = lexer.Tokens.Int -> stmts (parseInt (tokens,program))
-      | (tok,_) when tok = lexer.Tokens.Cin -> stmts (parseInput (tokens, program))
-      | (tok,_) when tok = lexer.Tokens.Cout -> stmts (parseCout (tokens, program))
-      | (tok,_) when tok = lexer.Tokens.ID -> stmts(parseID (tokens, program))
-      | (tok,_) when tok =  lexer.Tokens.If -> stmts (parseIf (tokens, program))
-      //continue just like this
-    
+    | (tok,_) when tok = lexer.Tokens.CloseBrace -> (tokens,program)
+    | (tok,_) when tok = lexer.Tokens.Int -> stmts (parseInt (tokens,program))
+    | (tok,_) when tok = lexer.Tokens.Cin -> stmts (parseInput (tokens, program))
+    | (tok,_) when tok = lexer.Tokens.Cout -> stmts (parseCout (tokens, program))
+    | (tok,_) when tok = lexer.Tokens.ID -> stmts(parseID (tokens, program))
+    | (tok,_) when tok = lexer.Tokens.If -> stmts (ifstmt (tokens, program))
+    | (tok,_) when tok = lexer.Tokens.Semicolon -> stmts(empty (tokens, program))
+
+  let stmts (tokens,program) =
+    (tokens,program)
+    |> morestmts
+
+
   //
   // simpleC
   // 

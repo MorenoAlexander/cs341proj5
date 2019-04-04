@@ -52,4 +52,3 @@ let main argv =
     printfn ""
     //
     0
-    ///fuck
