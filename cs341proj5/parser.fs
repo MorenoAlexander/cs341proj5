@@ -138,7 +138,7 @@ module parser =
     (tokens,program)
     |> matchToken lexer.Tokens.Cout
     |> matchToken lexer.Tokens.Output
-    |> exprvalue
+    |> expr
     |> matchToken lexer.Tokens.Semicolon
     
 
@@ -149,6 +149,19 @@ module parser =
     |> exprvalue
     |> matchToken lexer.Tokens.Semicolon
 
+
+
+  let parseElsepart (tokens, program) =
+    (tokens, program)
+
+
+  let parseIf (tokens, program) = 
+    (tokens,program)
+    |> matchToken lexer.Tokens.If
+    |> matchToken lexer.Tokens.OpenParen
+    |> expr
+    |> matchToken lexer.Tokens.CloseParen
+    |> parseElsepart
   let rec stmts (tokens,program) =
     let h = List.head tokens
     match h with 
@@ -157,6 +170,7 @@ module parser =
       | (tok,_) when tok = lexer.Tokens.Cin -> stmts (parseInput (tokens, program))
       | (tok,_) when tok = lexer.Tokens.Cout -> stmts (parseCout (tokens, program))
       | (tok,_) when tok = lexer.Tokens.ID -> stmts(parseID (tokens, program))
+      | (tok,_) when tok =  lexer.Tokens.If -> stmts (parseIf (tokens, program))
       //continue just like this
     
   //
