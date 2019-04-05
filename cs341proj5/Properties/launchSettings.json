@@ -2,7 +2,7 @@
   "profiles": {
     "Compiler": {
       "commandName": "Project",
-      "commandLineArgs": "main.c"
+      "commandLineArgs": "C:\\Users\\am171\\source\\repos\\MorenoAlexander\\cs341proj5\\cs341proj5\\main.c"
     }
   }
 }
