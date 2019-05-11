@@ -1,4 +1,9 @@
 {
+  "help":[
+    {
+      "test":"yes"
+    }
+    ]
   "configurations": [
     {
       "inheritEnvironments": [
